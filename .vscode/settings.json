@@ -8,5 +8,5 @@
         "**/*.pyc": true,
         "**/__pycache__": true
     },
-    "python.pythonPath": "C:/Users/saltamimi/.virtualenvs/halobot-rewrite-b0ASDow5/Scripts/python.exe"
+    "python.defaultInterpreterPath": "C:/Users/saltamimi/.virtualenvs/halobot-rewrite-b0ASDow5/Scripts/python.exe"
 }
