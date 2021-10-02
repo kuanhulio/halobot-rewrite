@@ -36,9 +36,8 @@ class Gamer(db.Entity):
     discord_id = Required(str)
     gamertag   = Required(str)
 
-class Squads(db.Entity):
+class Squads(Gamer):
     squad_name  = Required(str)
-    owner       = Required(Gamer)
     coowner     = Optional(str)
     members     = Optional(StrArray)
     channel_ids = Required(StrArray)
