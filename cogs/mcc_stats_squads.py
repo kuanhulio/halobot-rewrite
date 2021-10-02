@@ -47,7 +47,7 @@ class Squads(Gamer):
 db.bind(provider='sqlite', filename='xboxusers.sqlite', create_db=True)
 db.generate_mapping(create_tables=True)
 
-class MCCStats(commands.Cog):
+class MCCStatsAndSquads(commands.Cog):
     """Get your Spartan Stats from the Halo: The Master Chief Collection"""
     def __init__(self, bot):
         self.bot = bot
@@ -120,4 +120,4 @@ class MCCStats(commands.Cog):
                 await ctx.send(embed=embed)
 
 def setup(bot):
-    bot.add_cog(MCCStats(bot))
+    bot.add_cog(MCCStatsAndSquads(bot))
