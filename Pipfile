@@ -7,10 +7,10 @@ name = "pypi"
 enhanced-dpy = "*"
 requests = "*"
 discord-pretty-help = "*"
-pony = "*"
 cchardet = "*"
 aiodns = "*"
 aiohttp = "*"
+pony = "*"
 
 [dev-packages]
 pylint = "*"
