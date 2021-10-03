@@ -36,18 +36,19 @@ class Gamer(db.Entity):
     gamertag   = Required(str)
 
 
-# class Squads(Gamer):
-#     squad_name  = Required(str)
-#     coowner     = Optional(str)
-#     members     = Optional(StrArray)
-#     channel_ids = Required(StrArray)
-#     role_ids    = Required(StrArray)
+class Squads(db.Entity):
+    squad_name  = Required(str)
+    owner_id    = Required(str)
+    coowner     = Optional(str)
+    members     = Optional(StrArray)
+    channel_ids = Required(StrArray)
+    role_ids    = Required(StrArray)
 
 db.bind(provider='sqlite', filename='xboxusers.sqlite', create_db=True)
 db.generate_mapping(create_tables=True)
 
 async def gamertag_getter(gamertag: str, game: str = None, game_variant: str = None, checker: int =1):
-    # This function obfuscates the API calls so my regular functions look nice.
+    # This function handles the API calls so my regular functions look nice.
     # Checker = 1 means it's a Stats call
     # Checker = 2 means it's a Latest Game Call
     # TODO: Add more checks if needed.
@@ -57,14 +58,14 @@ async def gamertag_getter(gamertag: str, game: str = None, game_variant: str = N
             async with session.get(BASE_ENDPOINT + STATS_ENDPOINT, params=params) as resp:
                 returned_value = await resp.json()
             await session.close()
-            return returned_value
+        return returned_value
     elif checker == 2:
         params = {"gamertag": gamertag, "game": game, "gameVariant": game_variant}
         async with aiohttp.ClientSession() as session:
             async with session.get(BASE_ENDPOINT + GAMES_LATEST_ENDPOINT, params=params) as resp:
                 returned_value = await resp.json()
             await session.close()
-            return returned_value 
+        return returned_value 
 
 class MCCStatsAndSquads(commands.Cog):
     """Get your Spartan Stats from the Halo: The Master Chief Collection"""
