@@ -11,6 +11,7 @@ cchardet = "*"
 aiodns = "*"
 aiohttp = "*"
 pony = "*"
+discordutils = "*"
 
 [dev-packages]
 pylint = "*"

@@ -282,6 +282,16 @@ class MCCStatsAndSquads(commands.Cog):
             
             await ctx.send("Done! Your squad was made and you have your channels made! Just scroll to find it!")
 
+    @squads.command()
+    async def disband(self, ctx):
+        """Disbands the Squad. This is an Owner Only command."""
+        
+        # We need to do more checks!
+
+        with db_session:
+            self_squad_owner_check = len(select(s for s in Squads if s.owner_id == str(ctx.author.id))[:])
+            self_squad_coowner_check = len(select(s for s in Squads if s.coowner == str(ctx.author.id))[:])
+        
 
 def setup(bot):
     bot.add_cog(MCCStatsAndSquads(bot))

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "5e36af3e030a01716a835c69f769fdf11b5143cb7bebc52cb136c6ee53935fb5"
+            "sha256": "7133b10f464b57632831ddea4153cca105068158535e0ec67b9d1c898a762c2b"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -174,6 +174,22 @@
             "index": "pypi",
             "version": "==1.3.3"
         },
+        "discord.py": {
+            "hashes": [
+                "sha256:462cd0fe307aef8b29cbfa8dd613e548ae4b2cb581d46da9ac0d46fb6ea19408",
+                "sha256:c6f64db136de0e18e090f6752ea68bdd4ab0a61b82dfe7acecefa22d6477bb0c"
+            ],
+            "markers": "python_full_version >= '3.5.3'",
+            "version": "==1.7.3"
+        },
+        "discordutils": {
+            "hashes": [
+                "sha256:2619a25ba405468fd77e12ed3d62cab5e0eb06dc6c2efad22f2a29ee8d8ec0d4",
+                "sha256:e9213bf2ad8cbb5f80ef3b527dcb4c251ac778156d112d31a05e24b1fa4b23ad"
+            ],
+            "index": "pypi",
+            "version": "==1.3.4"
+        },
         "enhanced-dpy": {
             "hashes": [
                 "sha256:4074c079abd9b08d487021c086708c73828fd6b3bbdf6d7253710787fd35d3be"
@@ -278,7 +294,7 @@
                 "sha256:4987c65554f7a2dbf30c18fd48778ef124af6fab771a377103da0585e2336ece",
                 "sha256:c4fdf4019605b6e5423637e01bc9fe4daef873709a7973e195ceba0a62bbc844"
             ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4' and python_version < '4'",
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4' and python_version < '4.0'",
             "version": "==1.26.7"
         },
         "yarl": {
