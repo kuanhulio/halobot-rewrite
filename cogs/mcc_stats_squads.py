@@ -289,9 +289,25 @@ class MCCStatsAndSquads(commands.Cog):
         # We need to do more checks!
 
         with db_session:
-            self_squad_owner_check = len(select(s for s in Squads if s.owner_id == str(ctx.author.id))[:])
-            self_squad_coowner_check = len(select(s for s in Squads if s.coowner == str(ctx.author.id))[:])
-        
+            self_squad_owner_check = select(s for s in Squads if s.owner_id == str(ctx.author.id))[:]
+            if len(self_squad_owner_check) == 0:
+                await ctx.send("You don't own a squad to disband.")
+            else:
+                squad = self_squad_owner_check
+                squad_role_ids = squad[0].role_ids
+                squad_channel_ids = squad[0].channel_ids
+
+                for role_id in squad_role_ids:
+                    role = ctx.guild.get_role(int(role_id))            
+                    await role.delete()
+
+                for channel_id in squad_channel_ids:
+                    channel = ctx.guild.get_channel(int(channel_id))
+                    await channel.delete()
+
+                squad[0].delete()
+
+
 
 def setup(bot):
     bot.add_cog(MCCStatsAndSquads(bot))
