@@ -10,6 +10,7 @@ ALL_ROLE_VC_COUNTER    = 893573978285809764
 STAFF_RANKS_SPACER     = 892327566323613706
 CONSOLE_RANKS_SPACER   = 892345177480499220
 GAME_RANKS_SPACER      = 892328071649165343
+SQUADS_RANKS_SPACER    = 894293959491346493
 PERMISSIONS_SPACER     = 892328268668219392
 
 EASY_LURKER_ROLE       = 892332958650884148
@@ -81,11 +82,13 @@ class Events(commands.Cog):
         MOD_LOG_CHANNEL = member.guild.get_channel(MOD_LOG_CHANNEL_ID)
         STAFF_RANKS = member.guild.get_role(STAFF_RANKS_SPACER)
         CONSOLE_RANKS = member.guild.get_role(CONSOLE_RANKS_SPACER)
+        SQUADS_RANKS = member.guild.get_role(SQUADS_RANKS_SPACER)
         PERMISSIONS_RANKS_SPACER = member.guild.get_role(PERMISSIONS_SPACER)
         GAME_RANKS = member.guild.get_role(GAME_RANKS_SPACER)
         EASY_LURKER = member.guild.get_role(EASY_LURKER_ROLE)
         await member.add_roles(STAFF_RANKS, reason="New User Join")
         await member.add_roles(CONSOLE_RANKS, reason="New User Join")
+        await member.add_roles(SQUADS_RANKS, reason="New User Join")
         await member.add_roles(PERMISSIONS_RANKS_SPACER, reason="New User Join")
         await member.add_roles(GAME_RANKS, reason="New User Join")        
         await member.add_roles(EASY_LURKER, reason="New User Join")

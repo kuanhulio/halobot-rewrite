@@ -10,7 +10,15 @@ STATS_ENDPOINT         = "stats/"
 GAMES_LATEST_ENDPOINT  = "games/latest/"
 GAMES_HISTORY_ENDPOINT = "games/history/" 
 
-CORRECT_GAMES = ["h1", "h2", "h2a", "h3", "h4", "hr"]
+CORRECT_GAMES = [
+    "h1", 
+    "h2", 
+    "h2a", 
+    "h3", 
+    "h4", 
+    "hr"
+]
+
 CORRECT_GAME_VARIANT = [
     "Slayer",  
     "CTF", 
@@ -177,19 +185,103 @@ class MCCStatsAndSquads(commands.Cog):
 
             embed.set_footer(text=f"Requested by {ctx.author.display_name}")
 
-            embed.add_field(name="Game Variant", value=response["games"][0]["gameVariant"], inline=True)
-            embed.add_field(name="Map ID", value=response["games"][0]["mapId"], inline=True)
-            embed.add_field(name="Won?", value=response["games"][0]["won"], inline=True)
-            embed.add_field(name="Score", value=response["games"][0]["score"], inline=True)
-            embed.add_field(name="Assists", value=response["games"][0]["assists"], inline=True)
-            embed.add_field(name="Kills", value=response["games"][0]["kills"], inline=True)
-            embed.add_field(name="Deaths", value=response["games"][0]["deaths"], inline=True)
-            embed.add_field(name="Kill/Death Ratio", value=response["games"][0]["killDeathRatio"], inline=True)
-            embed.add_field(name="Headshot Rate", value=response["games"][0]["headshotRate"], inline=True)
-            embed.add_field(name="Played at...", value=response["games"][0]["playedAtRecency"], inline=True)
-            embed.add_field(name="Headshots", value=response["games"][0]["headshots"], inline=True)
-            embed.add_field(name="Medals", value=response["games"][0]["medals"], inline=True)        
+            embed.add_field(name="Game Variant", value=response["gameVariant"], inline=True)
+            embed.add_field(name="Map ID", value=response["mapId"], inline=True)
+            embed.add_field(name="Won?", value=response["won"], inline=True)
+            embed.add_field(name="Score", value=response["score"], inline=True)
+            embed.add_field(name="Assists", value=response["assists"], inline=True)
+            embed.add_field(name="Kills", value=response["kills"], inline=True)
+            embed.add_field(name="Deaths", value=response["deaths"], inline=True)
+            embed.add_field(name="Kill/Death Ratio", value=response["killDeathRatio"], inline=True)
+            embed.add_field(name="Headshot Rate", value=response["headshotRate"], inline=True)
+            embed.add_field(name="Played at...", value=response["playedAtRecency"], inline=True)
+            embed.add_field(name="Headshots", value=response["headshots"], inline=True)
+            embed.add_field(name="Medals", value=response["medals"], inline=True)        
             await ctx.send(embed=embed)
+    
+    @commands.group()
+    @commands.guild_only()
+    async def squads(self, ctx):
+        if ctx.invoked_subcommand is None:
+            pass
+
+    @squad.command()
+    async def create(self, ctx, potential_squad_name: str = None):
+        """Create your own Squad. It requires a name."""
+
+        # So first, we need to make a couple of checks.
+
+        with db_session:
+            # Rule 1: You can't have a squad with the same name. 
+            squad_names_check = len(select(s for s in Squads if s.squad_name == potential_squad_name)[:])
+            # Rule 2: You can't be in another squad.
+            self_squad_owner_check = len(select(s for s in Squads if s.owner_id == str(ctx.author.id))[:])
+            self_squad_coowner_check = len(select(s for s in Squads if s.coowner == str(ctx.author.id))[:])
+            self_squad_member_check = 0
+            for x in select(s.members for s in Squads)[:]:
+                for member_id in x:
+                    if str(ctx.author.id) == member_id:
+                        self_squad_member_check = 1
+
+        if squad_names_check != 0:
+            await ctx.send("The squad is the same name as another squad. You need to choose another name before you can make a squad.")
+        elif self_squad_owner_check != 0:
+            await ctx.send("You own another squad. You need to disband it before you can make a squad.")
+        elif self_squad_coowner_check != 0:
+            await ctx.send("You're a co-owner in another squad. You need to leave it before you can make a squad.")
+        elif self_squad_member_check != 0:
+            await ctx.send("You're in another squad. You need to leave it before you can make a squad")
+        else:
+            # Naming our roles and channels
+            squad_owner_role_name = potential_squad_name + " Owner"
+            squad_coowner_role_name = potential_squad_name + " Co-Owner"
+            squad_member_role_name = potential_squad_name + " Member"
+
+            squad_member_channel_name = potential_squad_name  + " Chat"
+            squad_owner_channel_name = potential_squad_name  + " Owner Chat"
+            squad_member_voice_channel_name = potential_squad_name  + " Chat"
+
+            # Actually making our roles
+            SQUADS_CATEGORY_CHANNEL = ctx.guild.get_channel(894288971314647050)
+            SQUAD_OWNER_ROLE = await ctx.guild.create_role(name=squad_owner_role_name)
+            SQUAD_COOWNER_ROLE = await ctx.guild.create_role(name=squad_coowner_role_name)
+            SQUAD_MEMBER_ROLE = await ctx.guild.create_role(name=squad_member_role_name)
+
+            # Sorting our positions
+            positions = {
+                SQUAD_OWNER_ROLE: 13,
+                SQUAD_COOWNER_ROLE: 13,
+                SQUAD_MEMBER_ROLE: 13
+            }
+            
+            await ctx.guild.edit_role_positions(positions)
+
+            # Assigning the roles
+            await ctx.author.add_roles(SQUAD_OWNER_ROLE)
+
+            # Create our channels
+
+            member_overwrites = {
+                ctx.guild.default_role: discord.PermissionOverwrite.from_pair(discord.Permissions.none(), discord.Permissions.all()),
+                SQUAD_OWNER_ROLE: discord.PermissionOverwrite.from_pair(discord.Permissions.all_channel(), discord.Permissions.none()), 
+                SQUAD_COOWNER_ROLE: discord.PermissionOverwrite.from_pair(discord.Permissions.all_channel(), discord.Permissions.none()),
+                SQUAD_MEMBER_ROLE: discord.PermissionOverwrite.from_pair(discord.Permissions.all_channel(), discord.Permissions.none())
+            }
+
+            SQUAD_MEMBER_CHANNEL = await SQUADS_CATEGORY_CHANNEL.create_text_channel(squad_member_channel_name, overwrites=member_overwrites)
+            SQUAD_OWNER_CHANNEL  = await SQUADS_CATEGORY_CHANNEL.create_text_channel(squad_owner_channel_name, overwrites=member_overwrites)
+            SQUAD_VOICE_CHANNEL  = await SQUADS_CATEGORY_CHANNEL.create_voice_channel(squad_member_voice_channel_name, overwrites=member_overwrites)
+
+            # Finalize everything for the DB
+
+            roles = [str(SQUAD_OWNER_ROLE.id), str(SQUAD_COOWNER_ROLE.id), str(SQUAD_MEMBER_ROLE.id)]
+            channels = [str(SQUAD_OWNER_CHANNEL.id), str(SQUAD_MEMBER_CHANNEL.id), str(SQUAD_VOICE_CHANNEL.id)]
+
+            with db_session:
+                Squads(squad_name=potential_squad_name, owner_id=str(ctx.author.id), role_ids=roles, channel_ids=channels)
+            
+            await ctx.send("Done! Your squad was made and you have your channels made! Just scroll to find it!")
+
 
 def setup(bot):
     bot.add_cog(MCCStatsAndSquads(bot))
