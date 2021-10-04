@@ -205,7 +205,7 @@ class MCCStatsAndSquads(commands.Cog):
         if ctx.invoked_subcommand is None:
             pass
 
-    @squad.command()
+    @squads.command()
     async def create(self, ctx, potential_squad_name: str = None):
         """Create your own Squad. It requires a name."""
 
