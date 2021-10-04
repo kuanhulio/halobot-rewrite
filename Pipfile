@@ -12,6 +12,7 @@ aiodns = "*"
 aiohttp = "*"
 pony = "*"
 discordutils = "*"
+asyncio = "*"
 
 [dev-packages]
 pylint = "*"

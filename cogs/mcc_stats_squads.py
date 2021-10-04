@@ -1,6 +1,7 @@
 import discord
 import datetime
 import aiohttp
+import asyncio
 
 from pony.orm import *
 from discord.ext import commands
@@ -74,6 +75,19 @@ async def gamertag_getter(gamertag: str, game: str = None, game_variant: str = N
                 returned_value = await resp.json()
             await session.close()
         return returned_value 
+
+# @db_session
+# def db_checker(potential_squad_name: str = None, self_id: int = None, members_id: int = None):
+#     if potential_squad_name
+#     squad_names_check = len(select(s for s in Squads if s.squad_name == potential_squad_name)[:])
+#     self_squad_owner_check = len(select(s for s in Squads if s.owner_id == str(self_id))[:])
+#     self_squad_coowner_check = len(select(s for s in Squads if s.coowner == str(self_id))[:])
+#     self_squad_member_check = 0
+#     for x in select(s.members for s in Squads)[:]:
+#         for member_id in x:
+#             if str(members_id) == member_id:
+#                 self_squad_member_check = 1
+    
 
 class MCCStatsAndSquads(commands.Cog):
     """Get your Spartan Stats from the Halo: The Master Chief Collection"""
@@ -290,22 +304,90 @@ class MCCStatsAndSquads(commands.Cog):
 
         with db_session:
             self_squad_owner_check = select(s for s in Squads if s.owner_id == str(ctx.author.id))[:]
-            if len(self_squad_owner_check) == 0:
-                await ctx.send("You don't own a squad to disband.")
-            else:
-                squad = self_squad_owner_check
-                squad_role_ids = squad[0].role_ids
-                squad_channel_ids = squad[0].channel_ids
 
-                for role_id in squad_role_ids:
-                    role = ctx.guild.get_role(int(role_id))            
-                    await role.delete()
+        if len(self_squad_owner_check) == 0:
+            await ctx.send("You don't own a squad to disband.")
+        else:
+            squad = self_squad_owner_check
+            squad_role_ids = squad[0].role_ids
+            squad_channel_ids = squad[0].channel_ids
 
-                for channel_id in squad_channel_ids:
-                    channel = ctx.guild.get_channel(int(channel_id))
-                    await channel.delete()
+            for role_id in squad_role_ids:
+                role = ctx.guild.get_role(int(role_id))            
+                await role.delete()
 
+            for channel_id in squad_channel_ids:
+                channel = ctx.guild.get_channel(int(channel_id))
+                await channel.delete()
+            with db_session:
                 squad[0].delete()
+    
+    @squads.command()
+    async def invite(self, ctx, member: discord.Member):
+        """Invite a player to your Squad! This requires that you're a Co-Owner+."""
+
+        # More checks!
+        with db_session:
+            self_squad_owner_check = len(select(s for s in Squads if s.owner_id == str(ctx.author.id))[:])
+            self_squad_coowner_check = len(select(s for s in Squads if s.coowner == str(ctx.author.id))[:])
+            self_squad_member_check = 0
+            for x in select(s.members for s in Squads)[:]:
+                for member_id in x:
+                    if str(member.id) == member_id:
+                        self_squad_member_check = 1
+        
+            squad = select(s for s in Squads if s.owner_id == str(ctx.author.id))[:][0]
+        
+        if (self_squad_owner_check + self_squad_coowner_check == 0) or self_squad_member_check == 1:
+            await ctx.send("You do not own or co-own a squad.")
+        else:
+            message = await ctx.send(f"{member.mention} has 30 seconds to respond Yes or this invitation will be cancelled!")
+            await message.add_reaction("🇾")
+
+            def check_user_positive(reaction, user):
+                return user.id == member.id and str(reaction.emoji) == "🇾"
+
+            try:
+                reaction, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=check_user_positive)
+            except asyncio.TimeoutError:
+                await ctx.send("I'm sorry, but the user either didn't respond in time.")
+            else:
+                await member.add_roles(ctx.guild.get_role(int(squad.role_ids[2])), reason="Invitation to Squad")
+                with db_session:
+                    squad = select(s for s in Squads if s.owner_id == str(ctx.author.id))[:][0]
+                    squad.members.append(str(member.id))
+
+                await ctx.send("You've joined the squad! You've been given access to the channels below.")
+    
+    @squads.command()
+    async def promote(self, ctx, member: discord.Member):
+        """Promotes a member in your Squad to Co-Owner! This is Owner Only."""
+
+        with db_session:
+            self_squad_owner_check = len(select(s for s in Squads if s.owner_id == str(ctx.author.id))[:])
+            self_squad_coowner_check = select(s for s in Squads if s.owner_id == str(ctx.author.id))[:][0]
+            self_squad_member_check = 0
+            for x in select(s.members for s in Squads)[:]:
+                for member_id in x:
+                    if str(member.id) == member_id:
+                        self_squad_member_check = 1
+        
+        if self_squad_owner_check == 0:
+            await ctx.send("You don't own a squad.")
+        elif self_squad_member_check == 0:
+            await ctx.send(f"{member.mention} is not in your squad.")
+        elif self_squad_coowner_check.coowner != "":
+            await ctx.send("You already have a co-owner.")
+        else:
+            await member.add_roles(ctx.guild.get_role(int(self_squad_coowner_check.role_ids[1])))
+            await member.remove_roles(ctx.guild.get_role(int(self_squad_coowner_check.role_ids[2])))
+
+            with db_session:
+                squad = select(s for s in Squads if s.owner_id == str(ctx.author.id))[:][0]
+                squad.coowner = str(member.id)
+
+            await ctx.send(f"You've promoted {member.mention} to co-owner.")
+    
 
 
 
