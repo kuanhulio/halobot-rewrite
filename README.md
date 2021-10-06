@@ -1,6 +1,6 @@
-## How to Install
+# How to Install
 
-# Manual
+## Manual
 ```
 git clone https://github.com/kuanhulio/halobot-rewrite.git
 cd halo*

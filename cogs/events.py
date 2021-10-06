@@ -42,7 +42,6 @@ PC_EMOTE = 893210773357215765
 ROLE_MESSAGE_ID = 893214480249540668
 MOD_LOG_CHANNEL_ID = 892367102789427202
 
-
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
