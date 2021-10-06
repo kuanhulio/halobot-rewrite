@@ -7,20 +7,16 @@ from discord.ext import commands
 with open("config.json", "r") as f:
     config = json.load(f)
 
-bot = commands.Bot(
-    command_prefix=config["prefix"], 
-    prefix=config["prefix"],
-    owner_ids=config["owners"], 
-    command_attrs=dict(hidden=True), 
-    help_command=PrettyHelp(),
-    intents=discord.Intents( 
-        guilds=True, 
-        members=True, 
-        messages=True, 
-        reactions=True, 
-        presences=True
-    )
-)
+bot = commands.Bot(command_prefix=config["prefix"],
+                   prefix=config["prefix"],
+                   owner_ids=config["owners"],
+                   command_attrs=dict(hidden=True),
+                   help_command=PrettyHelp(),
+                   intents=discord.Intents(guilds=True,
+                                           members=True,
+                                           messages=True,
+                                           reactions=True,
+                                           presences=True))
 
 for file in os.listdir("cogs"):
     if file.endswith(".py"):

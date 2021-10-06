@@ -1,0 +1,11 @@
+{
+    "token": "discord token here",
+    "join_message": "",
+    "owners": [
+      306590179911794698
+    ],
+    "prefix": [
+      "/"
+    ]
+}
+  
