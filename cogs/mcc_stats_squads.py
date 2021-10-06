@@ -290,9 +290,10 @@ class MCCStatsAndSquads(commands.Cog):
 
             roles = [str(SQUAD_OWNER_ROLE.id), str(SQUAD_COOWNER_ROLE.id), str(SQUAD_MEMBER_ROLE.id)]
             channels = [str(SQUAD_OWNER_CHANNEL.id), str(SQUAD_MEMBER_CHANNEL.id), str(SQUAD_VOICE_CHANNEL.id)]
+            members = [str(ctx.author.id)]
 
             with db_session:
-                Squads(squad_name=potential_squad_name, owner_id=str(ctx.author.id), role_ids=roles, channel_ids=channels)
+                Squads(squad_name=potential_squad_name, owner_id=str(ctx.author.id), members=members, role_ids=roles, channel_ids=channels)
             
             await ctx.send("Done! Your squad was made and you have your channels made! Just scroll to find it!")
 
@@ -340,6 +341,8 @@ class MCCStatsAndSquads(commands.Cog):
         
         if (self_squad_owner_check + self_squad_coowner_check == 0) or self_squad_member_check == 1:
             await ctx.send("You do not own or co-own a squad.")
+        elif len(squad.members) >= 8:
+            await ctx.send("Your Squad is full. You cannot invite this player.")
         else:
             message = await ctx.send(f"{member.mention} has 30 seconds to respond Yes or this invitation will be cancelled!")
             await message.add_reaction("🇾")
@@ -388,8 +391,88 @@ class MCCStatsAndSquads(commands.Cog):
 
             await ctx.send(f"You've promoted {member.mention} to co-owner.")
     
+    @squads.command()
+    async def demote(self, ctx):
+        """Demotes Co-Owner in your Squad to a regular member. This is Owner Only."""
 
+        with db_session:
+            self_squad_owner_check = len(select(s for s in Squads if s.owner_id == str(ctx.author.id))[:])
+            self_squad_coowner_check = select(s for s in Squads if s.owner_id == str(ctx.author.id))[:][0]
 
+        
+        if self_squad_owner_check == 0:
+            await ctx.send("You don't own a squad.")
+        elif self_squad_coowner_check.coowner == "":
+            await ctx.send("You don't have a co-owner.")
+        else:
+            member = ctx.guild.get_member(int(self_squad_coowner_check.coowner))
+            await member.add_roles(ctx.guild.get_role(int(self_squad_coowner_check.role_ids[2])))
+            await member.remove_roles(ctx.guild.get_role(int(self_squad_coowner_check.role_ids[1])))
 
+            with db_session:
+                squad = select(s for s in Squads if s.owner_id == str(ctx.author.id))[:][0]
+                squad.coowner = ""
+
+            await ctx.send(f"You've demoted {member.mention} to co-owner.")
+        
+    @squads.command()
+    async def remove(self, ctx, member: discord.Member):
+        """Removes a person out of the squad. This is Co-Owner+."""
+        
+        with db_session:
+            self_squad_owner_check = len(select(s for s in Squads if s.owner_id == str(ctx.author.id))[:])
+            self_squad_coowner_check = len(select(s for s in Squads if s.coowner == str(ctx.author.id))[:])
+            self_squad_member_check = 0
+            for x in select(s.members for s in Squads)[:]:
+                for member_id in x:
+                    if str(member.id) == member_id:
+                        self_squad_member_check = 1
+
+        if self_squad_owner_check == 0 and self_squad_coowner_check.coowner == 0:
+            await ctx.send("You don't own a squad.")
+        else:
+            if self_squad_member_check == 0:
+                await ctx.send(f"{member.mention} is not in your squad.")
+            else:
+                with db_session:
+                    if self_squad_owner_check != 0:
+                        squad = select(s for s in Squads if s.owner_id == str(ctx.author.id))[:][0]
+                        squad.members.remove(str(member.id))
+                    else:
+                        squad = select(s for s in Squads if s.coowner == str(ctx.author.id))[:][0]
+                        squad.members.remove(str(member.id))
+                
+                await member.remove_roles(ctx.guild.get_role(int(squad.role_ids[2])))
+                await ctx.send(f"{member.mention} has been removed from the squad.")
+
+    @squads.command()
+    async def leave(self, ctx):
+        """Leaves the squad."""
+
+        with db_session:
+            self_squad_coowner_check = len(select(s for s in Squads if s.coowner == str(ctx.author.id))[:])
+            self_squad_member_check = 0
+            for x in select(s.members for s in Squads)[:]:
+                for member_id in x:
+                    if str(ctx.author.id) == member_id:
+                        self_squad_member_check = 1
+
+        if self_squad_member_check == 0 and self_squad_coowner_check == 0:
+            await ctx.send("You aren't in a squad.")
+        else:
+            member = ctx.guild.get_member(ctx.author.id)
+            with db_session:
+                if self_squad_coowner_check == 1:
+                    squad = select(s for s in Squads if s.coowner == str(ctx.author.id))[:][0]
+                    squad.coowner = ""
+                    squad.members.remove(str(ctx.author.id))
+                    await member.remove_roles(ctx.guild.get_role(int(squad.role_ids[1])))
+                else:    
+                    squad = select(s for s in Squads if str(ctx.author.id) in s.members)[:][0]
+                    squad.members.remove(str(ctx.author.id))
+                    await member.remove_roles(ctx.guild.get_role(int(squad.role_ids[2])))
+            
+            await ctx.send(f"{member.mention} has left from the squad.")
+    
 def setup(bot):
     bot.add_cog(MCCStatsAndSquads(bot))
