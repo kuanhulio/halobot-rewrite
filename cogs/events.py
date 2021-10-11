@@ -50,6 +50,10 @@ class Events(commands.Cog):
     async def on_command(self, ctx):
         print(f"{ctx.guild.name} > {ctx.author} > {ctx.message.clean_content}")
 
+    # @commands.Cog.listener()
+    # async def on_command_error(self, ctx, error):
+    #     print(error)
+
     @commands.Cog.listener()
     async def on_ready(self):
         """ The function that activates when boot was completed """

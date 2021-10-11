@@ -64,8 +64,7 @@ async def gamertag_getter(gamertag: str,
             "gameVariant": game_variant
         }
         async with aiohttp.ClientSession() as session:
-            async with session.get(BASE_ENDPOINT + GAMES_LATEST_ENDPOINT,
-                                   params=params) as resp:
+            async with session.get(BASE_ENDPOINT + GAMES_LATEST_ENDPOINT, params=params) as resp:
                 returned_value = await resp.json()
             await session.close()
         return returned_value
@@ -89,8 +88,8 @@ class MCCStatsAndSquads(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
-    async def setxbox(self, ctx, *, gamertag: str):
+    @commands.command(message_command=False)
+    async def setxbox(self, ctx, gamertag: str = commands.Option(description="Set your gamertag to your Discord ID")):
         """ Set your gamertag """
 
         # This does the client connection to the MCC API.
@@ -120,26 +119,28 @@ class MCCStatsAndSquads(commands.Cog):
                 Gamer(discord_id=str(ctx.author.id), gamertag=gamertag)
                 await ctx.send(f"I've set your gamertag to `{gamertag}`!")
 
-    @commands.command()
-    async def stats(self, ctx, *, gamertag=None):
+    @commands.command(message_command=False)
+    async def stats(self, ctx, gamertag = commands.Option(None, description='Grab game stats from a gamertag')):
         """ Grab stats about a Spartan """
 
         # When working with the database, we have to have this context manager.
 
         # Instead of not allowing someone to check the gamertag if they don't have it linked,
         # go ahead and send it as a warning
-        with db_session:
-            if len(
-                    select(g for g in Gamer
-                           if g.discord_id == str(ctx.author.id))[:]) == 0:
-                await ctx.send(
-                    "This gamertag isn't linked. If this is your gamertag, use `/setxbox <gamertag>`."
-                )
 
-        response = await gamertag_getter(gamertag=gamertag,
-                                         game=None,
-                                         game_variant=None,
-                                         checker=1)
+        await ctx.interaction.response.defer()
+        with db_session:
+            if len(select(g for g in Gamer if g.discord_id == str(ctx.author.id))[:]) == 0:
+                await ctx.send("This gamertag isn't linked. If this is your gamertag, use `/setxbox <gamertag>`.")
+            else:
+                gamertag = select(g for g in Gamer if g.discord_id == str(ctx.author.id))[:][0].gamertag
+
+        response = await gamertag_getter(
+            gamertag = gamertag, 
+            game = None,
+            game_variant = None,
+            checker = 1
+        )
 
         if "error" in response:
             await ctx.send(
@@ -147,9 +148,9 @@ class MCCStatsAndSquads(commands.Cog):
             )
         else:
             embed = discord.Embed(title=f"Stats for Spartan {gamertag}",
-                                  colour=discord.Colour(0x40cf0f),
-                                  timestamp=datetime.datetime.utcfromtimestamp(
-                                      datetime.datetime.now().timestamp()))
+                                colour=discord.Colour(0x40cf0f),
+                                timestamp=datetime.datetime.utcfromtimestamp(
+                                    datetime.datetime.now().timestamp()))
 
             embed.set_thumbnail(url=response["emblem"])
             embed.set_footer(text=f"Requested by {ctx.author.display_name}")
@@ -186,14 +187,13 @@ class MCCStatsAndSquads(commands.Cog):
             embed.add_field(name="Current Streak",
                             value=response["streak"],
                             inline=True)
-            await ctx.send(embed=embed)
+            await ctx.interaction.followup.send(embed=embed)
 
-    @commands.command()
-    async def latestgame(self,
-                         ctx,
-                         gamertag=None,
-                         game="All",
-                         game_variant="All"):
+    @commands.command(message_command=False)
+    async def latestgame(self, ctx, 
+                        gamertag = commands.Option(None, description="Gamertag to search"),
+                        game = commands.Option(None, description="Which game to look at"), 
+                        game_variant = commands.Option(None, description="Which game variant to look at")):
         """ Grab latest match stats """
 
         # Why this long one at the top?
@@ -201,6 +201,11 @@ class MCCStatsAndSquads(commands.Cog):
         # Second, Python runs from the top down (like most languages) so for it to be used, it needs to be at the top.
 
         # This is a sanity check to make sure the arguments won't make gamertag_getter error out.
+        if game == None:
+            game = "All"
+        
+        if game_variant == None:
+            game_variant = "All"
 
         if (game != "All" and game not in CORRECT_GAMES) and (
                 game_variant != "All"
@@ -226,17 +231,19 @@ class MCCStatsAndSquads(commands.Cog):
         # This is just a warning, it will not stop the function from running, just advises to add it if you haven't already.
 
         with db_session:
-            if len(
-                    select(g for g in Gamer
-                           if g.discord_id == str(ctx.author.id))[:]) == 0:
-                await ctx.send(
-                    "This gamertag isn't linked. If this is your gamertag, use `/setxbox <gamertag>`."
-                )
+            if len(select(g for g in Gamer if g.discord_id == str(ctx.author.id))[:]) == 0:
+                await ctx.send("This gamertag isn't linked. If this is your gamertag, use `/setxbox <gamertag>`.")
+            else:
+                gamertag = select(g for g in Gamer if g.discord_id == str(ctx.author.id))[:][0].gamertag
 
-        response = await gamertag_getter(gamertag=gamertag,
-                                         game=game,
-                                         game_variant=game_variant,
-                                         checker=2)
+        await ctx.interaction.response.defer()
+
+        response = await gamertag_getter(
+            gamertag = gamertag, 
+            game = game,
+            game_variant = game_variant,
+            checker = 2
+        )
 
         if "error" in response:
             await ctx.send(
@@ -252,84 +259,93 @@ class MCCStatsAndSquads(commands.Cog):
             embed.set_footer(text=f"Requested by {ctx.author.display_name}")
 
             embed.add_field(name="Game Variant",
-                            value=response["gameVariant"],
+                            value=response["games"][0]["gameVariant"],
                             inline=True)
             embed.add_field(name="Map ID",
-                            value=response["mapId"],
+                            value=response["games"][0]["mapId"],
                             inline=True)
-            embed.add_field(name="Won?", value=response["won"], inline=True)
-            embed.add_field(name="Score", value=response["score"], inline=True)
+            embed.add_field(name="Won?", value="Yes" if response["games"][0]["won"] is True else "No", inline=True)
+            embed.add_field(name="Score", value=response["games"][0]["score"], inline=True)
             embed.add_field(name="Assists",
-                            value=response["assists"],
+                            value=response["games"][0]["assists"],
                             inline=True)
-            embed.add_field(name="Kills", value=response["kills"], inline=True)
+            embed.add_field(name="Kills", value=response["games"][0]["kills"], inline=True)
             embed.add_field(name="Deaths",
-                            value=response["deaths"],
+                            value=response["games"][0]["deaths"],
                             inline=True)
             embed.add_field(name="Kill/Death Ratio",
-                            value=response["killDeathRatio"],
+                            value="{:.3f}".format(response["games"][0]["killDeathRatio"]),
                             inline=True)
             embed.add_field(name="Headshot Rate",
-                            value=response["headshotRate"],
+                            value="{:.0%}".format(response["games"][0]["headshotRate"]),
                             inline=True)
             embed.add_field(name="Played at...",
-                            value=response["playedAtRecency"],
+                            value=response["games"][0]["playedAtRecency"],
                             inline=True)
             embed.add_field(name="Headshots",
-                            value=response["headshots"],
+                            value=response["games"][0]["headshots"],
                             inline=True)
             embed.add_field(name="Medals",
-                            value=response["medals"],
+                            value=response["games"][0]["medals"],
                             inline=True)
-            await ctx.send(embed=embed)
+            await ctx.interaction.followup.send(embed=embed)
 
     @commands.group()
     @commands.guild_only()
     async def squads(self, ctx):
         if ctx.invoked_subcommand is None:
-            embeds = []
+            pass
+
+    @squads.command(message_command=False, name="list")
+    async def _list(self, ctx):
+        """ List all the current squads and their rosters """
+        embeds = []
+        roster = ""
+
+        with db_session:
+            squads = select(s for s in Squads)[:]
+
+        await ctx.interaction.response.defer()
+        for squad in squads:
+            for gamer in squad.members:
+                member = ctx.interaction.guild.get_member(int(gamer))
+                roster += member.mention + "\n"
+
+            coowner = "No Co-Owner" if squad.coowner == "" else ctx.guild.get_member(
+                int(squad.coowner)).mention
+
+            embed = discord.Embed(
+                title="Squad Listings",
+                colour=discord.Colour.random(),
+                timestamp=datetime.datetime.utcfromtimestamp(
+                    datetime.datetime.now().timestamp()))
+            embed.add_field(name="Squad Name",
+                            value=f"{squad.squad_name}",
+                            inline=True)
+            embed.add_field(
+                name="Owner",
+                value=
+                f"{ctx.interaction.guild.get_member(int(squad.owner_id)).mention}",
+                inline=True)
+            embed.add_field(name="Co-Owner",
+                            value=f"{coowner}",
+                            inline=True)
+            embed.add_field(name="​​​", value="​​", inline=True)
+            embed.add_field(name="Roster", value=f"{roster}", inline=True)
+            embed.add_field(name="​​", value="​​", inline=True)
+            embeds.append(embed)
             roster = ""
 
-            with db_session:
-                squads = select(s for s in Squads)[:]
+        paginator = DiscordUtils.Pagination.AutoEmbedPaginator(ctx)
+        await paginator.run(embeds)
 
-            for squad in squads:
-                for gamer in squad.members:
-                    member = ctx.guild.get_member(int(gamer))
-                    roster += member.mention + "\n"
-
-                coowner = "No Co-Owner" if squad.coowner == "" else ctx.guild.get_member(
-                    int(squad.coowner)).mention
-
-                embed = discord.Embed(
-                    title="Squad Listings",
-                    colour=discord.Colour.random(),
-                    timestamp=datetime.datetime.utcfromtimestamp(
-                        datetime.datetime.now().timestamp()))
-                embed.add_field(name="Squad Name",
-                                value=f"{squad.squad_name}",
-                                inline=True)
-                embed.add_field(
-                    name="Owner",
-                    value=
-                    f"{ctx.guild.get_member(int(squad.owner_id)).mention}",
-                    inline=True)
-                embed.add_field(name="Co-Owner",
-                                value=f"{coowner}",
-                                inline=True)
-                embed.add_field(name="​​​", value="​​", inline=True)
-                embed.add_field(name="Roster", value=f"{roster}", inline=True)
-                embed.add_field(name="​​", value="​​", inline=True)
-                embeds.append(embed)
-
-            paginator = DiscordUtils.Pagination.AutoEmbedPaginator(ctx)
-            await paginator.run(embeds)
-
-    @squads.command()
-    async def create(self, ctx, potential_squad_name: str = None):
+    @squads.command(message_command=False)
+    async def create(self, ctx, potential_squad_name: str = commands.Option(description="This is the Squad name you want")):
         """Create your own Squad. It requires a name."""
 
         # So first, we need to make a couple of checks.
+
+        await ctx.interaction.response.defer()
 
         with db_session:
             # Rule 1: You can't have a squad with the same name.
@@ -376,12 +392,12 @@ class MCCStatsAndSquads(commands.Cog):
             squad_member_voice_channel_name = potential_squad_name + " Chat"
 
             # Actually making our roles
-            SQUADS_CATEGORY_CHANNEL = ctx.guild.get_channel(894288971314647050)
-            SQUAD_OWNER_ROLE = await ctx.guild.create_role(
+            SQUADS_CATEGORY_CHANNEL = ctx.interaction.guild.get_channel(894288971314647050)
+            SQUAD_OWNER_ROLE = await ctx.interaction.guild.create_role(
                 name=squad_owner_role_name)
-            SQUAD_COOWNER_ROLE = await ctx.guild.create_role(
+            SQUAD_COOWNER_ROLE = await ctx.interaction.guild.create_role(
                 name=squad_coowner_role_name)
-            SQUAD_MEMBER_ROLE = await ctx.guild.create_role(
+            SQUAD_MEMBER_ROLE = await ctx.interaction.guild.create_role(
                 name=squad_member_role_name)
 
             # Sorting our positions
@@ -391,15 +407,15 @@ class MCCStatsAndSquads(commands.Cog):
                 SQUAD_MEMBER_ROLE: 13
             }
 
-            await ctx.guild.edit_role_positions(positions)
+            await ctx.interaction.guild.edit_role_positions(positions)
 
             # Assigning the roles
-            await ctx.author.add_roles(SQUAD_OWNER_ROLE)
+            await ctx.interaction.user.add_roles(SQUAD_OWNER_ROLE)
 
             # Create our channels
 
             member_overwrites = {
-                ctx.guild.default_role:
+                ctx.interaction.guild.default_role:
                 discord.PermissionOverwrite.from_pair(
                     discord.Permissions.none(), discord.Permissions.all()),
                 SQUAD_OWNER_ROLE:
@@ -444,39 +460,42 @@ class MCCStatsAndSquads(commands.Cog):
                        role_ids=roles,
                        channel_ids=channels)
 
-            await ctx.send(
+            await ctx.interaction.followup.send(
                 "Done! Your squad was made and you have your channels made! Just scroll to find it!"
             )
 
-    @squads.command()
+    @squads.command(message_command=False)
     async def disband(self, ctx):
         """Disbands the Squad. This is an Owner Only command."""
 
         # We need to do more checks!
 
         with db_session:
-            self_squad_owner_check = select(
-                s for s in Squads if s.owner_id == str(ctx.author.id))[:]
+            self_squad_owner_check = select(s for s in Squads if s.owner_id == str(ctx.author.id))[:]
 
         if len(self_squad_owner_check) == 0:
             await ctx.send("You don't own a squad to disband.")
         else:
             squad = self_squad_owner_check
+            squad_name = squad[0].squad_name
             squad_role_ids = squad[0].role_ids
             squad_channel_ids = squad[0].channel_ids
 
             for role_id in squad_role_ids:
-                role = ctx.guild.get_role(int(role_id))
+                role = ctx.interaction.guild.get_role(int(role_id))
                 await role.delete()
 
             for channel_id in squad_channel_ids:
-                channel = ctx.guild.get_channel(int(channel_id))
+                channel = ctx.interaction.guild.get_channel(int(channel_id))
                 await channel.delete()
-            with db_session:
-                squad[0].delete()
 
-    @squads.command()
-    async def invite(self, ctx, member: discord.Member):
+            await ctx.send(f"`{squad_name}` has been disbanded.")
+
+            with db_session:
+                select(s for s in Squads if s.owner_id == str(ctx.author.id))[:][0].delete()
+
+    @squads.command(message_command=False)
+    async def invite(self, ctx, member: discord.Member = commands.Option(description='Invite a player to your Squad.')):
         """Invite a player to your Squad! This requires that you're a Co-Owner+."""
 
         # More checks!
@@ -508,6 +527,7 @@ class MCCStatsAndSquads(commands.Cog):
             )
             await message.add_reaction("🇾")
 
+            await ctx.interaction.response.defer()
             def check_user_positive(reaction, user):
                 return user.id == member.id and str(reaction.emoji) == "🇾"
 
@@ -526,7 +546,7 @@ class MCCStatsAndSquads(commands.Cog):
                                    if s.owner_id == str(ctx.author.id))[:][0]
                     squad.members.append(str(member.id))
 
-                await ctx.send(
+                await ctx.interaction.followup.send(
                     "You've joined the squad! You've been given access to the channels below."
                 )
 
@@ -669,7 +689,6 @@ class MCCStatsAndSquads(commands.Cog):
                         ctx.guild.get_role(int(squad.role_ids[2])))
 
             await ctx.send(f"{member.mention} has left from the squad.")
-
 
 def setup(bot):
     bot.add_cog(MCCStatsAndSquads(bot))

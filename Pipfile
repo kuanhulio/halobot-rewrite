@@ -4,7 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-enhanced-dpy = "*"
 requests = "*"
 discord-pretty-help = "*"
 cchardet = "*"
@@ -12,7 +11,7 @@ aiodns = "*"
 aiohttp = "*"
 pony = "*"
 discordutils = "*"
-asyncio = "*"
+"discord.py" = {git = "https://github.com/iDevision/enhanced-discord.py"}
 
 [dev-packages]
 pylint = "*"
