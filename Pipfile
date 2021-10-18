@@ -8,14 +8,14 @@ requests = "*"
 discord-pretty-help = "*"
 cchardet = "*"
 aiodns = "*"
-aiohttp = "*"
 pony = "*"
 discordutils = "*"
 "discord.py" = {git = "https://github.com/iDevision/enhanced-discord.py"}
+aiohttp = "*"
+alt-profanity-check = "*"
 
 [dev-packages]
 pylint = "*"
-yapf = "*"
 
 [requires]
 python_version = "3.9"

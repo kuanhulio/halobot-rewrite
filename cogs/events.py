@@ -61,24 +61,27 @@ class Events(commands.Cog):
             self.bot.uptime = datetime.utcnow()
 
         await self.bot.change_presence(
-            activity=discord.Game("with the test subjects."),
-            status=discord.Status.online)
-
-        update_user_channel = discord.utils.get(self.bot.get_all_channels(),
-                                                id=ALL_USER_VC_COUNTER)
-        await update_user_channel.edit(name="All Members: {}".format(
-            update_user_channel.guild.member_count))
-
-        update_role_channel = discord.utils.get(self.bot.get_all_channels(),
-                                                id=ALL_ROLE_VC_COUNTER)
-        await update_role_channel.edit(
-            name="Roles Count: {}".format(len(update_role_channel.guild.roles))
+            activity = discord.Game("with the test subjects."),
+            status = discord.Status.online
         )
 
-        update_channel = discord.utils.get(self.bot.get_all_channels(),
-                                           id=ALL_CHANNEL_VC_COUNTER)
-        await update_channel.edit(name="Channels Count: {}".format(
-            len(update_role_channel.guild.channels)))
+        update_user_channel = discord.utils.get(self.bot.get_all_channels(), id=ALL_USER_VC_COUNTER)
+        
+        await update_user_channel.edit(
+            name = f"All Members: {update_user_channel.guild.member_count}"
+        )
+
+        update_role_channel = discord.utils.get(self.bot.get_all_channels(), id=ALL_ROLE_VC_COUNTER)
+        
+        await update_role_channel.edit(
+            name = f"Roles Count: {len(update_role_channel.guild.roles)}"
+        )
+
+        update_channel = discord.utils.get(self.bot.get_all_channels(), id=ALL_CHANNEL_VC_COUNTER)
+        
+        await update_channel.edit(
+            name = f"Channels Count: {len(update_role_channel.guild.channels)}"
+        )
 
         # Indicate that the bot has successfully booted up
         print(f'Ready: {self.bot.user} | Servers: {len(self.bot.guilds)}')
@@ -88,8 +91,7 @@ class Events(commands.Cog):
         if member.bot:
             return
 
-        update_user_channel = discord.utils.get(self.bot.get_all_channels(),
-                                                id=ALL_USER_VC_COUNTER)
+        update_user_channel = discord.utils.get(self.bot.get_all_channels(), id=ALL_USER_VC_COUNTER)
         MOD_LOG_CHANNEL = member.guild.get_channel(MOD_LOG_CHANNEL_ID)
         STAFF_RANKS = member.guild.get_role(STAFF_RANKS_SPACER)
         CONSOLE_RANKS = member.guild.get_role(CONSOLE_RANKS_SPACER)
@@ -97,23 +99,27 @@ class Events(commands.Cog):
         PERMISSIONS_RANKS_SPACER = member.guild.get_role(PERMISSIONS_SPACER)
         GAME_RANKS = member.guild.get_role(GAME_RANKS_SPACER)
         EASY_LURKER = member.guild.get_role(EASY_LURKER_ROLE)
+
         await member.add_roles(STAFF_RANKS, reason="New User Join")
         await member.add_roles(CONSOLE_RANKS, reason="New User Join")
         await member.add_roles(SQUADS_RANKS, reason="New User Join")
-        await member.add_roles(PERMISSIONS_RANKS_SPACER,
-                               reason="New User Join")
+        await member.add_roles(PERMISSIONS_RANKS_SPACER, reason="New User Join")
         await member.add_roles(GAME_RANKS, reason="New User Join")
         await member.add_roles(EASY_LURKER, reason="New User Join")
-        await update_user_channel.edit(name="All Members: {}".format(
-            update_user_channel.guild.member_count))
+
+        await update_user_channel.edit(
+            name = f"All Members: {update_user_channel.guild.member_count}"
+        )
 
         embed = discord.Embed(
-            title="Member Join",
-            colour=discord.Colour.green(),
-            description="This is posted when a new member joins the Guild.")
-        embed.set_thumbnail(url="{}".format(member.avatar_url))
+            title = "Member Join",
+            colour = discord.Colour.green(),
+            description = "This is posted when a new member joins the Guild."
+        )
+        
+        embed.set_thumbnail(url="{}".format(member.avatar.url))
         embed.set_author(name="{}".format(member.name),
-                         icon_url="{}".format(member.avatar_url))
+                         icon_url="{}".format(member.avatar.url))
 
         embed.add_field(name="Player Name", value="{}".format(member.mention))
         embed.add_field(name="Created Account At",
@@ -129,14 +135,16 @@ class Events(commands.Cog):
             return
 
         MOD_LOG_CHANNEL = message.guild.get_channel(MOD_LOG_CHANNEL_ID)
+
         embed = discord.Embed(
             title="Message Deleted",
             colour=discord.Colour.red(),
-            description="This is posted when a message gets deleted.")
+            description="This is posted when a message gets deleted."
+        )
 
-        embed.set_thumbnail(url="{}".format(message.author.avatar_url))
+        embed.set_thumbnail(url="{}".format(message.author.avatar.url))
         embed.set_author(name="{}".format(message.author.name),
-                         icon_url="{}".format(message.author.avatar_url))
+                         icon_url="{}".format(message.author.avatar.url))
 
         embed.add_field(name="Message Deleted",
                         value="{}".format(message.clean_content))
@@ -156,9 +164,9 @@ class Events(commands.Cog):
             colour=discord.Colour.orange(),
             description="This is posted when a message gets edited.")
 
-        embed.set_thumbnail(url="{}".format(before.author.avatar_url))
+        embed.set_thumbnail(url="{}".format(before.author.avatar.url))
         embed.set_author(name="{}".format(before.author.name),
-                         icon_url="{}".format(before.author.avatar_url))
+                         icon_url="{}".format(before.author.avatar.url))
 
         embed.add_field(name="Message Before Edit",
                         value="{}".format(before.clean_content))
@@ -392,9 +400,9 @@ class Events(commands.Cog):
             description="This is posted when a message's reactions are cleared."
         )
 
-        embed.set_thumbnail(url="{}".format(message.author.avatar_url))
+        embed.set_thumbnail(url="{}".format(message.author.avatar.url))
         embed.set_author(name="{}".format(message.author.name),
-                         icon_url="{}".format(message.author.avatar_url))
+                         icon_url="{}".format(message.author.avatar.url))
 
         embed.add_field(name="Message Content",
                         value="{}".format(message.clean_content))
@@ -442,9 +450,9 @@ class Events(commands.Cog):
             colour=discord.Colour.red(),
             description="This is posted when a member leaves the Guild.")
 
-        embed.set_thumbnail(url="{}".format(member.avatar_url))
+        embed.set_thumbnail(url="{}".format(member.avatar.url))
         embed.set_author(name="{}".format(member.name),
-                         icon_url="{}".format(member.avatar_url))
+                         icon_url="{}".format(member.avatar.url))
 
         embed.add_field(name="Player Name", value="{}".format(member.mention))
         embed.add_field(name="User ID", value="{}".format(member.id))
@@ -461,9 +469,9 @@ class Events(commands.Cog):
             colour=discord.Colour.orange(),
             description="This is posted when a member edits their profile.")
 
-        embed.set_thumbnail(url="{}".format(before.avatar_url))
+        embed.set_thumbnail(url="{}".format(before.avatar.url))
         embed.set_author(name="{}".format(before.name),
-                         icon_url="{}".format(before.avatar_url))
+                         icon_url="{}".format(before.avatar.url))
 
         embed.add_field(name="Old Avatar", value="{}".format(before.avatar))
         embed.add_field(name="Old Username", value="{}".format(before.name))
@@ -487,9 +495,9 @@ class Events(commands.Cog):
             colour=discord.Colour.green(),
             description="This is posted when a member edits their profile.")
 
-        embed.set_thumbnail(url="{}".format(before.avatar_url))
+        embed.set_thumbnail(url="{}".format(before.avatar.url))
         embed.set_author(name="{}".format(before.name),
-                         icon_url="{}".format(before.avatar_url))
+                         icon_url="{}".format(before.avatar.url))
 
         embed.add_field(name="Old Avatar", value="{}".format(before.avatar))
         embed.add_field(name="Old Username", value="{}".format(before.name))
@@ -513,10 +521,10 @@ class Events(commands.Cog):
             colour=discord.Colour.red(),
             description="This is posted when a member is banned.")
 
-        embed.set_thumbnail(url="{}".format(user.avatar_url))
+        embed.set_thumbnail(url="{}".format(user.avatar.url))
         embed.set_author(name="{}".format(user.name))
 
-        embed.add_field(name="Avatar", value="{}".format(user.avatar_url))
+        embed.add_field(name="Avatar", value="{}".format(user.avatar.url))
         embed.add_field(name="Username", value="{}".format(user.name))
         embed.add_field(name="User ID", value="{}".format(user.id))
         embed.add_field(name="Created Account At",
@@ -535,10 +543,10 @@ class Events(commands.Cog):
             colour=discord.Colour.green(),
             description="This is posted when a member is unbanned.")
 
-        embed.set_thumbnail(url="{}".format(member.avatar_url))
+        embed.set_thumbnail(url="{}".format(member.avatar.url))
         embed.set_author(name="{}".format(member.name))
 
-        embed.add_field(name="Avatar", value="{}".format(member.avatar_url))
+        embed.add_field(name="Avatar", value="{}".format(member.avatar.url))
         embed.add_field(name="Username", value="{}".format(member.name))
         embed.add_field(name="User ID", value="{}".format(member.id))
         embed.add_field(name="Created Account At",
@@ -556,14 +564,14 @@ class Events(commands.Cog):
             colour=discord.Colour.green(),
             description="This is posted when a invite is created.")
 
-        embed.set_thumbnail(url="{}".format(member.avatar_url))
+        embed.set_thumbnail(url="{}".format(member.avatar.url))
         embed.set_author(name="{}".format(member.name))
 
         embed.add_field(name="Invite ID", value="{}".format(invite.id))
         embed.add_field(name="Invite Code", value="{}".format(invite.code))
         embed.add_field(name="Invite Created At",
                         value="{}".format(invite.created_at))
-        embed.add_field(name="Avatar", value="{}".format(member.avatar_url))
+        embed.add_field(name="Avatar", value="{}".format(member.avatar.url))
         embed.add_field(name="Username", value="{}".format(member.name))
         embed.add_field(name="User ID", value="{}".format(member.id))
         embed.add_field(name="Created Account At",
@@ -581,14 +589,14 @@ class Events(commands.Cog):
             colour=discord.Colour.green(),
             description="This is posted when a invite is deleted.")
 
-        embed.set_thumbnail(url="{}".format(member.avatar_url))
+        embed.set_thumbnail(url="{}".format(member.avatar.url))
         embed.set_author(name="{}".format(member.name))
 
         embed.add_field(name="Invite ID", value="{}".format(invite.id))
         embed.add_field(name="Invite Code", value="{}".format(invite.code))
         embed.add_field(name="Invite Created At",
                         value="{}".format(invite.created_at))
-        embed.add_field(name="Avatar", value="{}".format(member.avatar_url))
+        embed.add_field(name="Avatar", value="{}".format(member.avatar.url))
         embed.add_field(name="Username", value="{}".format(member.name))
         embed.add_field(name="User ID", value="{}".format(member.id))
         embed.add_field(name="Created Account At",
